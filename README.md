@@ -2,7 +2,21 @@
 Dynamically update the DNS cloud resolution
 
 #使用说明
-1. TBD 
+##  1. 编译jar包
+```shell
+mvn package
+```
+假设编译出来的jar包名字为： target/ddns-1.0-SNAPSHOT-jar-with-dependencies.jar
+ 
+##  2. 把jar包复制到你喜欢的目录。在jar包同级目录存放一份ddns.properties文件， 并按照自己的情况修改其中变量
+## 3. 运行:
+```
+java -jar ddns-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
+## 4. 添加到cron job 
+```java
+(略)
+```
 
 # Motivation
 1. 用阿里云做域名解析，然而IP是电信宽带动态分配的，经常莫名发生改变

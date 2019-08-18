@@ -1,8 +1,4 @@
-package fun.lnex;
-
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
+package fun.lnex.aliyun;
 
 class DDnsTest {
 
