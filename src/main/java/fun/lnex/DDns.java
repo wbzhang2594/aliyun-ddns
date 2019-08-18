@@ -84,7 +84,8 @@ public class DDns {
         UpdateDomainRecordResponse response;
         try {
             response = acsClient.getAcsResponse(request);
-
+            
+            System.out.println("updated from: "+ record.getValue() + " to: " + myPublicIP );
 
         } catch (ClientException e) {
             e.printStackTrace();
