@@ -19,9 +19,10 @@ public class DDns {
 
     }
     IAcsClient acsClient;
+    Properties properties;
     public DDns()
     {
-        Properties properties = new Properties();
+        properties= new Properties();
         InputStream is = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream("ddns.properties");
         try {
@@ -29,8 +30,8 @@ public class DDns {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        String ACCESS_KEY_ID = (String) properties.getProperty("ACCESS_KEY_ID", "");
-        String ACCESS_SECRET = (String) properties.getProperty("ACCESS_SECRET", "");
+        String ACCESS_KEY_ID = properties.getProperty("ACCESS_KEY_ID", "");
+        String ACCESS_SECRET = properties.getProperty("ACCESS_SECRET", "");
 
 
         // 创建DefaultAcsClient实例并初始化
@@ -56,7 +57,7 @@ public class DDns {
     //https://www.alibabacloud.com/help/zh/doc-detail/34308.htm?spm=a2c63.p38356.b99.71.6e2a6f5fInXzSe
     public void updateDDns(String myPublicIP) {
         DescribeDomainRecordsRequest request = new DescribeDomainRecordsRequest();
-        request.setDomainName("lnex.fun");
+        request.setDomainName(properties.getProperty("DOMAIN_NAME",""));
         DescribeDomainRecordsResponse response;
         try {
             response = acsClient.getAcsResponse(request);
