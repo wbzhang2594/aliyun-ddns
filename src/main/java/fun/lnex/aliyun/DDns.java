@@ -2,27 +2,27 @@ package fun.lnex.aliyun;
 
 import com.aliyuncs.DefaultAcsClient;
 import com.aliyuncs.IAcsClient;
-import com.aliyuncs.alidns.model.v20150109.*;
+import com.aliyuncs.alidns.model.v20150109.DescribeDomainRecordsRequest;
+import com.aliyuncs.alidns.model.v20150109.DescribeDomainRecordsResponse;
+import com.aliyuncs.alidns.model.v20150109.DescribeDomainRecordsResponse.Record;
+import com.aliyuncs.alidns.model.v20150109.UpdateDomainRecordRequest;
+import com.aliyuncs.alidns.model.v20150109.UpdateDomainRecordResponse;
 import com.aliyuncs.exceptions.ClientException;
 import com.aliyuncs.profile.DefaultProfile;
+import com.aliyuncs.utils.StringUtils;
+import fun.lnex.aliyun.model.DnsRecord;
 import fun.lnex.aliyun.tools.http.HttpUtils;
 
 import java.io.*;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class DDns {
 
-    public static final String DDNS_PROPERTIES = "ddns.properties";
-
-    public static void main(String[] args) {
-
-        DDns dDns = new DDns();
-        dDns.updateDDns();
-
-    }
-
+    public static final String DDNS_PROPERTIES = "private/ddns.properties";
     IAcsClient acsClient;
     Properties properties;
+    Map<String, List<DnsRecord>> dnsRecordDictionary;
 
     public DDns() {
         properties = new Properties();
@@ -49,8 +49,10 @@ public class DDns {
         }
         String ACCESS_KEY_ID = properties.getProperty("ACCESS_KEY_ID", "");
         String ACCESS_SECRET = properties.getProperty("ACCESS_SECRET", "");
+        String updateDomainInWhiteList = properties.getProperty("UpdateDomainInWhiteList", "");
+        dnsRecordDictionary = buildDnsRecordDict(updateDomainInWhiteList);
 
-        System.out.println(properties.toString());
+        System.out.println((new Date()).toString() + ": " + properties.toString());
 
         // 创建DefaultAcsClient实例并初始化
         DefaultProfile profile = DefaultProfile.getProfile(
@@ -58,6 +60,22 @@ public class DDns {
                 ACCESS_KEY_ID,      // RAM账号的AccessKey ID
                 ACCESS_SECRET); // RAM账号AccessKey Secret
         acsClient = new DefaultAcsClient(profile);
+    }
+
+    public static void main(String[] args) {
+
+        DDns dDns = new DDns();
+        dDns.updateDDns();
+
+    }
+
+    private Map<String, List<DnsRecord>> buildDnsRecordDict(String updateDomainInWhiteList) {
+//        Map<String, List<DnsRecord>> output = new HashMap<>();
+        List<String> strDnsRecordList = Arrays.asList(updateDomainInWhiteList.replace("\"", "").split("[;]"));
+        Map<String, List<DnsRecord>> output = strDnsRecordList.stream()
+                .map(strItem -> new DnsRecord(strItem))
+                .collect(Collectors.groupingBy(dnsRecord -> dnsRecord.getDomainName()));
+        return output;
     }
 
     private void updateDDns() {
@@ -70,12 +88,9 @@ public class DDns {
 
 
         boolean updated = updateDDns(myPublicIP);
-        if(!updated)
-        {
+        if (!updated) {
             System.out.println("No DNS record was updated!");
-        }
-        else
-        {
+        } else {
             System.out.println("DNS records were updated!");
         }
 
@@ -85,26 +100,47 @@ public class DDns {
     public boolean updateDDns(String myPublicIP) {
         final boolean[] updated = {false};
         DescribeDomainRecordsRequest request = new DescribeDomainRecordsRequest();
-        request.setDomainName(properties.getProperty("DOMAIN_NAME", ""));
-        DescribeDomainRecordsResponse response;
-        try {
-            response = acsClient.getAcsResponse(request);
 
-            response.getDomainRecords().stream().filter(record -> !record.getValue().equalsIgnoreCase(myPublicIP))
-                    .forEach(record -> {
-                        updateDDnsReally(record, myPublicIP);
-                        updated[0] = true;
-                    });
+        for (String domainName : dnsRecordDictionary.keySet()) {
+            if (domainName.equalsIgnoreCase("NULL")) {
+                continue;
+            }
 
-            return updated[0];
-        } catch (ClientException e) {
-            e.printStackTrace();
+            request.setDomainName(domainName);
+            DescribeDomainRecordsResponse response;
+            try {
+                response = acsClient.getAcsResponse(request);
+                List<Record> records = response.getDomainRecords();
+
+                records.stream()
+                        .filter(record -> whetherMatch(record, dnsRecordDictionary.get(domainName)))
+                        .filter(record -> !record.getValue().equalsIgnoreCase(myPublicIP))
+                        .forEach(record -> {
+                            updateDDnsReally(record, myPublicIP);
+                            updated[0] = true;
+                        });
+
+                return updated[0];
+            } catch (ClientException e) {
+                e.printStackTrace();
+            }
         }
         return false;
     }
 
+    private boolean whetherMatch(Record record, List<DnsRecord> dnsRecords) {
+        return dnsRecords.stream().anyMatch(r -> r.getDomainName().equalsIgnoreCase(record.getDomainName())
+                && (StringUtils.isEmpty(r.getLine()) || r.getLine().equalsIgnoreCase(record.getLine()))
+                && (StringUtils.isEmpty(r.getrR()) || r.getrR().equalsIgnoreCase(record.getRR()))
+                && (StringUtils.isEmpty(r.getStatus()) || r.getStatus().equalsIgnoreCase(record.getStatus()))
+                && (StringUtils.isEmpty(r.getTtl()) || Long.valueOf(r.getTtl()).equals(record.getTTL()))
+                && (StringUtils.isEmpty(r.getType()) || r.getType().equalsIgnoreCase(record.getType()))
+                && (StringUtils.isEmpty(r.getValue()) || r.getValue().equalsIgnoreCase(record.getValue()))
+        );
+    }
+
     //https://www.alibabacloud.com/help/zh/doc-detail/34306.htm?spm=a2c63.p38356.b99.69.63386384JNOiCS
-    private void updateDDnsReally(DescribeDomainRecordsResponse.Record record, String myPublicIP) {
+    private void updateDDnsReally(Record record, String myPublicIP) {
         UpdateDomainRecordRequest request = new UpdateDomainRecordRequest();
         request.setRecordId(record.getRecordId());
         request.setRR(record.getRR());

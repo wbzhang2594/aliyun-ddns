@@ -8,8 +8,11 @@ mvn package
 ```
 假设编译出来的jar包名字为： target/ddns-1.0-SNAPSHOT-jar-with-dependencies.jar
  
-##  2. 把jar包复制到你喜欢的目录。在jar包同级目录存放一份ddns.properties文件， 并按照自己的情况修改其中变量
-## 3. 运行:
+##  2. 安装：
+1. 把jar包复制到你喜欢的目录。
+2. 在jar包同级目录存放一份`private/ddns.properties`文件， 并按照自己的情况修改其中变量。 主要是账号信息，以及白名单。
+
+## 3. 在该目录下运行:
 ```
 java -jar ddns-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
