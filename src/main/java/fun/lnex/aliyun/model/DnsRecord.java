@@ -13,13 +13,13 @@ public class DnsRecord {
         String[] values = input.split("[,;]");
 
         if (values.length == 7) {
-            domainName = values[0].strip();
-            rR = values[1].strip();
-            type = values[2].strip();
-            line = values[3].strip();
-            value = values[4].strip();
-            ttl = values[5].strip();
-            status = values[6].strip();
+            domainName = values[0].trim();
+            rR = values[1].trim();
+            type = values[2].trim();
+            line = values[3].trim();
+            value = values[4].trim();
+            ttl = values[5].trim();
+            status = values[6].trim();
         }
         else{
             domainName = "NULL";
