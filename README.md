@@ -1,7 +1,7 @@
 # aliyun-ddns
 Dynamically update the DNS cloud resolution
 
-#使用说明
+# 使用说明
 ##  1. 编译jar包
 ```shell
 mvn package
